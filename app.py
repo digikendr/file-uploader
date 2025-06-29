@@ -37,9 +37,8 @@ def upload_zip():
             file,
             S3_BUCKET,
             s3_key,
-            ExtraArgs={'ContentType': 'application/zip', 'ACL': 'public-read'}
+            ExtraArgs={'ContentType': 'application/zip'}
         )
-
         # Construct accessible URL
         url = f"https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/{s3_key}"
 
