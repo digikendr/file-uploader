@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import boto3
 from botocore.exceptions import ClientError
 
 app = Flask(__name__)
+CORS(app, origins=['https://www.digikendr.com'])
 
 # Hardcoded AWS credentials and config for testing
 AWS_ACCESS_KEY_ID = 'AKIA6G75DYUUCBTK76G7'
