@@ -23,23 +23,24 @@ s3_client = boto3.client(
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
+        print("file hai hi nahi")
         return jsonify({'error': 'Missing file parameter'}), 400
 
     file = request.files['file']
 
     if file.filename == '':
+        print("file khali hai")
         return jsonify({'error': 'Empty filename'}), 400
 
     try:
         content_type = file.content_type
-
+        print(content_type)
         s3_client.upload_fileobj(
             file,
             S3_BUCKET,
             file.filename,
             ExtraArgs={
                 'ContentType': content_type,
-                'ContentDisposition': 'inline',  
                 'ACL': 'public-read'             
             }
         )
@@ -48,6 +49,7 @@ def upload_file():
         return jsonify({'url': url}), 200
 
     except ClientError as e:
+        print("hagg raha hai")
         app.logger.error(f"S3 upload failed: {e}")
         return jsonify({'error': 'Upload failed', 'details': str(e)}), 500
 
