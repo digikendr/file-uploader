@@ -29,7 +29,7 @@ def upload_zip():
     file = request.files['file']
     zip_filename = request.form['filename']
 
-    if file.filename == '' or not zip_filename.endswith('.zip'):
+    if file.filename == '':
         return jsonify({'error': 'Invalid file or filename'}), 400
 
     try:
