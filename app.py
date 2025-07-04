@@ -6,13 +6,11 @@ from botocore.exceptions import ClientError
 app = Flask(__name__)
 CORS(app)
 
-# Your original credentials and config
 AWS_ACCESS_KEY_ID = 'AKIA6G75DYUUCBTK76G7'
 AWS_SECRET_ACCESS_KEY = 'Y3lIwch3vpZc56402KwuY4s41pR0QyPQFAy5LtOM'
 AWS_REGION = 'ap-south-1'
 S3_BUCKET = 'digikendr'
 
-# Initialize S3 client
 s3_client = boto3.client(
     's3',
     aws_access_key_id=AWS_ACCESS_KEY_ID,
@@ -22,18 +20,23 @@ s3_client = boto3.client(
 
 @app.route('/upload', methods=['POST'])
 def upload_files():
-    if 'files' not in request.files:
-        return jsonify({'error': 'Missing files parameter'}), 400
-
     files = request.files.getlist('files')
-    if not files:
-        return jsonify({'error': 'No files provided'}), 400
+    filenames = request.form.getlist('filenames')
+
+    if not files or not filenames:
+        print("Error: Missing files or filenames")
+        return jsonify({'error': 'Missing files or filenames'}), 400
+
+    if len(files) != len(filenames):
+        print(f"Error: Number of files ({len(files)}) and filenames ({len(filenames)}) do not match")
+        return jsonify({'error': 'Number of files and filenames must match'}), 400
 
     uploaded_urls = []
 
-    for file in files:
-        if file.filename == '':
-            continue  # skip blank uploads
+    for index, (file, custom_filename) in enumerate(zip(files, filenames)):
+        if custom_filename.strip() == '':
+            print(f"Warning: Skipping file at index {index} due to blank filename")
+            continue  # skip blank filenames
 
         try:
             content_type = file.content_type or 'application/octet-stream'
@@ -41,19 +44,23 @@ def upload_files():
             s3_client.upload_fileobj(
                 file,
                 S3_BUCKET,
-                file.filename,
+                custom_filename,
                 ExtraArgs={
                     'ContentType': content_type
                 }
             )
 
-            url = f"https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/{file.filename}"
+            url = f"https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/{custom_filename}"
             uploaded_urls.append(url)
+            print(f"Uploaded: {custom_filename} -> {url}")
 
         except ClientError as e:
-            app.logger.error(f"Upload failed for {file.filename}: {e}")
+            error_msg = f"Upload failed for {custom_filename}: {e}"
+            print(error_msg)
+            app.logger.error(error_msg)
 
     if not uploaded_urls:
+        print("Error: No files were uploaded")
         return jsonify({'error': 'No files were uploaded'}), 500
 
     return jsonify({'uploaded_urls': uploaded_urls}), 200
