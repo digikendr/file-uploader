@@ -6,7 +6,7 @@ from botocore.exceptions import ClientError
 app = Flask(__name__)
 CORS(app)
 
-# Hardcoded AWS credentials and config for testing
+# AWS credentials for testing — switch to env vars in production
 AWS_ACCESS_KEY_ID = 'AKIA6G75DYUUCBTK76G7'
 AWS_SECRET_ACCESS_KEY = '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'
 AWS_REGION = 'ap-south-1'
@@ -21,29 +21,30 @@ s3_client = boto3.client(
 )
 
 @app.route('/upload', methods=['POST'])
-def upload_zip():
-    # Ensure 'file' and 'filename' are present
-    if 'file' not in request.files or 'filename' not in request.form:
-        return jsonify({'error': 'Missing file or filename parameter'}), 400
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'error': 'Missing file parameter'}), 400
 
     file = request.files['file']
-    zip_filename = request.form['filename']
 
     if file.filename == '':
-        return jsonify({'error': 'Invalid file or filename'}), 400
+        return jsonify({'error': 'Empty filename'}), 400
 
     try:
-        # Upload to S3
-        s3_key = zip_filename
+        content_type = file.content_type
+
         s3_client.upload_fileobj(
             file,
             S3_BUCKET,
-            s3_key,
-            ExtraArgs={'ContentType': 'application/zip'}
+            file.filename,
+            ExtraArgs={
+                'ContentType': content_type,
+                'ContentDisposition': 'inline',  
+                'ACL': 'public-read'             
+            }
         )
-        # Construct accessible URL
-        url = f"https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/{s3_key}"
 
+        url = f"https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/{file.filename}"
         return jsonify({'url': url}), 200
 
     except ClientError as e:
