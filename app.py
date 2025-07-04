@@ -41,7 +41,6 @@ def upload_file():
             file.filename,
             ExtraArgs={
                 'ContentType': content_type,
-                'ACL': 'public-read'             
             }
         )
 
